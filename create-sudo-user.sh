@@ -4,8 +4,8 @@
 # DEFAULT CONFIGURATION
 ###################################################################################################
 
-USER_NAME="<default name of new sudo user>"
-USER_PASSWORD="<default password of new sudo user>"
+# USER_NAME="<default name of new sudo user>"
+# USER_PASSWORD="<default password of new sudo user>"
 
 
 ###################################################################################################
@@ -38,6 +38,20 @@ while getopts "h?u:p:" opt; do
         ;;
     esac
 done
+
+if [ -z "$USER_NAME" ]
+then
+    echo "[ERROR] No User Name provided."
+    echo "Expected format: $(basename "$0") -u <user name> -p <passoword>"
+    echo "Exiting..."
+    exit 1
+elif [ -z "$USER_PASSWORD" ]
+then
+    echo "[ERROR] No User Password provided."
+    echo "Expected format: $(basename "$0") -u <user name> -p <passoword>"
+    echo "Exiting..."
+    exit 1
+fi
 
 
 ###################################################################################################
