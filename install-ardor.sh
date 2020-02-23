@@ -7,34 +7,43 @@
 #
 
 ###################################################################################################
+# DEFAULTS
+###################################################################################################
+RELEASEMAINDEFAULT=yes
+RELEASETESTDEFAULT=no
+OPENAPIDEFAULT=no
+HAVEDOMAINDEFAULT=no
+ARCHIVALDEFAULT=no
+
+SETUP_DOMAIN_MAINNET=false
+IS_ARCHIVAL_MAINNET_NODE=false
+
+SETUP_DOMAIN_TESTNET=false
+IS_ARCHIVAL_TESTNET_NODE=false
+
+ENABLE_LETSENCRYPT=false
+ENABLE_SELF_SIGNED_CERTIFICATE=false
+
+###################################################################################################
 # CONFIGURATION
 ###################################################################################################
 
-INSTALL_MAINNET_NODE=true
+#INSTALL_MAINNET_NODE=true
 MAINNET_DOMAIN="<domain of mainnet node>"
-MAINNET_ADMIN_PASSWORD="<password of ardor mainnet admin>" # leave it blank to disable password 
-                                                           # protection for protected APIs (not recommended)
-PUBLISH_MAINNET_DOMAIN=true
+
 DOWNLOAD_MAINNET_BLOCKCHAIN=true
-IS_ARCHIVAL_MAINNET_NODE=false
 
 
-INSTALL_TESTNET_NODE=true
+
+#INSTALL_TESTNET_NODE=true
 TESTNET_DOMAIN="<domain of testnet node>"
-TESTNET_ADMIN_PASSWORD="<password of ardor testnet admin>" # leave it blank to disable password 
-                                                           # protection for protected APIs (not recommended)
-PUBLISH_TESTNET_DOMAIN=true
-DOWNLOAD_TESTNET_BLOCKCHAIN=true
-IS_ARCHIVAL_TESTNET_NODE=false
 
+DOWNLOAD_TESTNET_BLOCKCHAIN=true
+
+
+LETSENCRYPT_RENEW_EVENT="30 2 1 */1 *" # At 02:30 on day-of-month 1 in every month.
 
 REBOOT=true
-
-
-ENABLE_LETSENCRYPT=true
-LETSENCRYPT_RENEW_EVENT="30 2	1 */1 *" # At 02:30 on day-of-month 1 in every month.
-
-ENABLE_SELF_SIGNED_CERTIFICATE=false
 
 
 ###################################################################################################
@@ -56,36 +65,6 @@ export LANGUAGE=\"en_US.UTF-8\"
 export LANG=\"en_US.UTF-8 \"
 export LC_ALL=\"en_US.UTF-8\"
 export LC_CTYPE=\"en_US.UTF-8\"
-"
-
-
-NGINX_MAINNET_GATEWAY_CONFIGURATION_FILE_CONTENT="
-server {
-  listen 80;
-
-  server_name ${MAINNET_DOMAIN};
-
-  location / {
-      proxy_bind 127.0.0.1;
-      proxy_set_header Host \$host;
-      proxy_pass http://127.0.0.1:27876/;
-  }
-}
-"
-
-
-NGINX_TESTNET_GATEWAY_CONFIGURATION_FILE_CONTENT="
-server {
-  listen 80;
-
-  server_name ${TESTNET_DOMAIN};
-
-  location / {
-      proxy_bind 127.0.0.1;
-      proxy_set_header Host \$host;
-      proxy_pass http://127.0.0.1:26876/;
-  }
-}
 "
 
 
@@ -147,45 +126,6 @@ server {
 "
 
 
-NXT_MAINNET_PROPERTIES_FILE_CONTENT="
-nxt.adminPassword=${MAINNET_ADMIN_PASSWORD}
-nxt.enablePeerUPnP=false
-nxt.apiServerEnforcePOST=true
-$(if [ ${PUBLISH_MAINNET_DOMAIN} == true ]; then
-    echo "nxt.myAddress=${MAINNET_DOMAIN}"
-fi)
-$(if [ ${IS_ARCHIVAL_MAINNET_NODE} == true ]; then
-    echo "nxt.maxPrunableLifetime=-1"
-fi)
-
-## Contract Runnner Configuration ##
-## see https://ardordocs.jelurida.com/Lightweight_Contracts for detailed informations ##
-# nxt.addOns=nxt.addons.ContractRunner
-# addon.contractRunner.secretPhrase=<secretphrase>
-# addon.contractRunner.feeRateNQTPerFXT.IGNIS=250000000
-"
-
-
-NXT_TESTNET_PROPERTIES_FILE_CONTENT="
-nxt.isTestnet=true
-nxt.adminPassword=${TESTNET_ADMIN_PASSWORD}
-nxt.enablePeerUPnP=false
-nxt.apiServerEnforcePOST=true
-$(if [ ${PUBLISH_TESTNET_DOMAIN} == true ]; then
-    echo "nxt.myAddress=${TESTNET_DOMAIN}"
-fi)
-$(if [ ${IS_ARCHIVAL_TESTNET_NODE} == true ]; then
-    echo "nxt.maxPrunableLifetime=-1"
-fi)
-
-## Contract Runnner Configuration ##
-## see https://ardordocs.jelurida.com/Lightweight_Contracts for detailed informations ##
-# nxt.addOns=nxt.addons.ContractRunner
-# addon.contractRunner.secretPhrase=<secretphrase>
-# addon.contractRunner.feeRateNQTPerFXT.IGNIS=250000000
-"
-
-
 ARDOR_MAINNET_SERVICE_FILE_CONTENT="
 [Unit]
 Description=Ardor-Mainnet
@@ -241,6 +181,167 @@ echo \"\" >> renew-certificate.log
 "
 
 
+###################################################################################################
+# MAIN
+###################################################################################################
+echo "" && echo "[INFO] Ardor install script started"
+# Verification Checks
+if [ $UID -eq 0 ]; then
+  echo "[ERROR] $0 should not be run as root."
+  echo "You can run 'bash ./create-sudo-user.sh' to create a new user"
+  echo "Exiting..."
+  exit 1
+fi
+if [ "$OSTYPE" != "linux-gnu" ] || [ "$HOSTTYPE" != "x86_64" ]; then
+  echo "Error: only Linux (x86_64) is supported."
+  exit 2
+fi
+
+[ "${RELEASEMAIN:-}" ] || read -r -p "Would you like to install a mainnet node? (Default $RELEASEMAINDEFAULT): " RELEASEMAIN
+RELEASEMAIN=${RELEASEMAIN:-$RELEASEMAINDEFAULT}
+if [ "$RELEASEMAIN" == "yes" ]; then
+  INSTALL_MAINNET_NODE=true
+  read -r -p "Please enter an Admin Password for this node: " MAINNET_ADMIN_PASSWORD
+  [ "${OPENAPIMAIN:-}" ] || read -r -p "Do you want this mainnet node to have an open API? (Default $OPENAPIDEFAULT): " OPENAPIMAIN
+  OPENAPIMAIN=${OPENAPIMAIN:-$OPENAPIDEFAULT}
+  if [ "$OPENAPIMAIN" == "yes" ]; then
+    SETUP_OPENAPI_MAINNET=true
+
+    [ "${HAVEDOMAINMAIN:-}" ] || read -r -p "Do you have a domain name for this mainnet node? (Default $HAVEDOMAINDEFAULT): " HAVEDOMAINMAIN
+    HAVEDOMAINMAIN=${HAVEDOMAINMAIN:-$HAVEDOMAINDEFAULT}
+    if [ "$HAVEDOMAINMAIN" == "yes" ]; then
+      read -r -p "Please enter the domain name: " MAINNET_DOMAIN
+      SETUP_DOMAIN_MAINNET=true
+      ENABLE_LETSENCRYPT=true
+    fi
+    
+  elif [ "$OPENAPIMAIN" == "no" ]; then
+    SETUP_OPENAPI_MAINNET=false
+  else
+    echo "$OPENAPIMAIN is not valid, please check and re-execute"
+    exit 2;
+  fi
+  [ "${ARCHIVALMAIN:-}" ] || read -r -p "Do you want this mainnet node to be an archival node? (Default $ARCHIVALDEFAULT): " ARCHIVALMAIN
+  ARCHIVALMAIN=${ARCHIVALMAIN:-$ARCHIVALDEFAULT}
+  if [ "$ARCHIVALMAIN" == "yes" ]; then
+    IS_ARCHIVAL_MAINNET_NODE=true    
+  fi
+elif [ "$RELEASEMAIN" == "no" ]; then
+  INSTALL_MAINNET_NODE=false
+else
+  echo "$RELEASEMAIN is not valid, please check and re-execute"
+  exit 2;
+fi
+if [ "$INSTALL_MAINNET_NODE" == true ]; then
+  NXT_MAINNET_PROPERTIES_FILE_CONTENT="
+  nxt.adminPassword=${MAINNET_ADMIN_PASSWORD}
+  nxt.enablePeerUPnP=false
+  nxt.apiServerEnforcePOST=true
+  $(if [ ${SETUP_OPENAPI_MAINNET} == true ]; then
+    echo nxt.apiServerHost=0.0.0.0
+    echo nxt.allowedBotHosts=*
+  fi)
+  $(if [ ${SETUP_DOMAIN_MAINNET} == true ]; then
+    echo "nxt.myAddress=${MAINNET_DOMAIN}"
+  fi)
+  $(if [ ${IS_ARCHIVAL_MAINNET_NODE} == true ]; then
+    echo "nxt.maxPrunableLifetime=-1"
+  fi)
+
+  ## Contract Runnner Configuration ##
+  ## see https://ardordocs.jelurida.com/Lightweight_Contracts for detailed informations ##
+  # nxt.addOns=nxt.addons.ContractRunner
+  # addon.contractRunner.secretPhrase=<secretphrase>
+  # addon.contractRunner.feeRateNQTPerFXT.IGNIS=250000000
+  "
+  NGINX_MAINNET_GATEWAY_CONFIGURATION_FILE_CONTENT="
+  server {
+    listen 80;
+
+    server_name ${MAINNET_DOMAIN};
+
+    location / {
+        proxy_bind 127.0.0.1;
+        proxy_set_header Host \$host;
+        proxy_pass http://127.0.0.1:27876/;
+    }
+  }
+  "
+fi
+
+[ "${RELEASETEST:-}" ] || read -r -p "Would you like to install a testnet node? (Default $RELEASETESTDEFAULT): " RELEASETEST
+RELEASETEST=${RELEASETEST:-$RELEASETESTDEFAULT}
+if [ "$RELEASETEST" == "yes" ]; then
+  INSTALL_TESTNET_NODE=true
+  read -r -p "Please enter an Admin Password for this node: " TESTNET_ADMIN_PASSWORD
+  [ "${OPENAPITEST:-}" ] || read -r -p "Do you want this testnet node to have an open API? (Default $OPENAPIDEFAULT): " OPENAPITEST
+  OPENAPITEST=${OPENAPITEST:-$OPENAPIDEFAULT}
+  if [ "$OPENAPITEST" == "yes" ]; then
+    SETUP_OPENAPI_TESTNET=true
+
+    [ "${HAVEDOMAINTEST:-}" ] || read -r -p "Do you have a domain name for this testnet node? (Default $HAVEDOMAINDEFAULT): " HAVEDOMAINTEST
+    HAVEDOMAINTEST=${HAVEDOMAINTEST:-$HAVEDOMAINDEFAULT}
+    if [ "$HAVEDOMAINTEST" == "yes" ]; then
+      read -r -p "Please enter the domain name: " TESTNET_DOMAIN
+      SETUP_DOMAIN_TESTNET=true
+      ENABLE_LETSENCRYPT=true
+    fi
+    
+  elif [ "$OPENAPITEST" == "no" ]; then
+    SETUP_OPENAPI_TESTNET=false
+  else
+    echo "$OPENAPITEST is not valid, please check and re-execute"
+    exit 2;
+  fi
+  [ "${ARCHIVALTEST:-}" ] || read -r -p "Do you want this mainnet node to be an archival node? (Default $ARCHIVALDEFAULT): " ARCHIVALTEST
+  ARCHIVALTEST=${ARCHIVALTEST:-$ARCHIVALDEFAULT}
+  if [ "$ARCHIVALTEST" == "yes" ]; then
+    IS_ARCHIVAL_TESTNET_NODE=true    
+  fi
+elif [ "$RELEASETEST" == "no" ]; then
+  INSTALL_TESTNET_NODE=false
+else
+  echo "$RELEASETEST is not valid, please check and re-execute"
+  exit 2;
+fi
+if [ "$INSTALL_TESTNET_NODE" == true ]; then
+  NXT_TESTNET_PROPERTIES_FILE_CONTENT="
+  nxt.isTestnet=true
+  nxt.adminPassword=${TESTNET_ADMIN_PASSWORD}
+  nxt.enablePeerUPnP=false
+  nxt.apiServerEnforcePOST=true
+  $(if [ ${SETUP_OPENAPI_TESTNET} == true ]; then
+    echo nxt.apiServerHost=0.0.0.0
+    echo nxt.allowedBotHosts=*
+  fi)
+  $(if [ ${SETUP_DOMAIN_TESTNET} == true ]; then
+      echo "nxt.myAddress=${TESTNET_DOMAIN}"
+  fi)
+  $(if [ ${IS_ARCHIVAL_TESTNET_NODE} == true ]; then
+      echo "nxt.maxPrunableLifetime=-1"
+  fi)
+
+  ## Contract Runnner Configuration ##
+  ## see https://ardordocs.jelurida.com/Lightweight_Contracts for detailed informations ##
+  # nxt.addOns=nxt.addons.ContractRunner
+  # addon.contractRunner.secretPhrase=<secretphrase>
+  # addon.contractRunner.feeRateNQTPerFXT.IGNIS=250000000
+  "
+  NGINX_TESTNET_GATEWAY_CONFIGURATION_FILE_CONTENT="
+  server {
+    listen 80;
+
+    server_name ${TESTNET_DOMAIN};
+
+    location / {
+        proxy_bind 127.0.0.1;
+        proxy_set_header Host \$host;
+        proxy_pass http://127.0.0.1:26876/;
+    }
+  }
+  "
+fi
+
 UPDATE_ARDOR_NODES_SCRIPT_CONTENT="
 #!/bin/bash
 
@@ -248,8 +349,8 @@ UPDATE_ARDOR_NODES_SCRIPT_CONTENT="
 # CONFIGURATION
 ###################################################################################################
 
-UPDATE_TESTNET_NODE=${INSTALL_MAINNET_NODE}
-UPDATE_MAINNET_NODE=${INSTALL_TESTNET_NODE}
+UPDATE_MAINNET_NODE=${INSTALL_MAINNET_NODE}
+UPDATE_TESTNET_NODE=${INSTALL_TESTNET_NODE}
 
 
 ###################################################################################################
@@ -262,7 +363,7 @@ wget https://www.jelurida.com/ardor-client.zip.asc
 gpg --with-fingerprint ardor-client.zip.asc
 
 echo \"\" && echo \"[INFO] unzipping new ardor release ...\"
-unzip ardor-client.zip
+unzip -qq ardor-client.zip
 
 
 if [ \${UPDATE_MAINNET_NODE} == true ]; then
@@ -320,18 +421,6 @@ rm -rf ardor ardor-client.zip ardor-client.zip.asc
 echo \"\" && echo \"[INFO] done. Ardor nodes updated\"
 "
 
-
-###################################################################################################
-# MAIN
-###################################################################################################
-# Verification Checks
-if [ $UID -eq 0 ]; then
-  echo "[ERROR] $0 should not be run as root."
-  echo "You can run 'bash ./create-sudo.user.sh' to create a new user"
-  echo "Exiting..."
-  exit 1
-fi
-
 echo "[INFO] setting language variables to solve location problems ..."
 echo "${PROFILE_LANGUAGE_VARIABLE}" >> ~/.profile
 source ~/.profile
@@ -339,52 +428,57 @@ source ~/.profile
 
 echo "" && echo "[INFO] updating system ..."
 sudo apt update
-sudo apt install unattended-upgrades -y
-sudo unattended-upgrades --debug cat /var/log/unattended-upgrades/unattended-upgrades.log
+[ "${DO_UPDATE:-}" ] || read -r -p "It is recommended that you run an OS update, would you like to do that now? (Default yes): " DO_UPDATE
+DO_UPDATE=${DO_UPDATE:-yes}
+if [ "$DO_UPDATE" == "yes" ]; then
+  sudo apt upgrade -y
+fi
+# sudo apt install unattended-upgrades -y
+# sudo unattended-upgrades --debug cat /var/log/unattended-upgrades/unattended-upgrades.log
 
 
-echo "" && echo "[INFO] installing nginx ..."
-sudo apt install -y nginx
-sudo service nginx stop
-
-
-echo "" && echo "[INFO] installing necessary tools ..."
-sudo apt install -y unzip
+echo "" && echo "[INFO] installing unzip ..."
+sudo apt-get install unzip -qq > /dev/null
 
 
 echo "" && echo "[INFO] installing OpenJDK 8 ..."
-sudo apt install -y openjdk-8-jre
+sudo apt-get install openjdk-8-jre -qq > /dev/null
 
 
-echo "" && echo "[INFO] enabling unattended-upgrade ..."
-echo "${UNATTENDED_UPGRADE_PERIODIC_CONFIG_FILE_CONTENT}" | sudo tee /etc/apt/apt.conf.d/10periodic > /dev/null
+# echo "" && echo "[INFO] enabling unattended-upgrade ..."
+# echo "${UNATTENDED_UPGRADE_PERIODIC_CONFIG_FILE_CONTENT}" | sudo tee /etc/apt/apt.conf.d/10periodic > /dev/null
 
 
-echo "" && echo "[INFO] configuring nginx ..."
-sudo sed -i -e "s/# server_tokens off;/server_tokens off;/g" /etc/nginx/nginx.conf
-sudo sed -i -e "s/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g" /etc/nginx/nginx.conf
+if [ ${SETUP_DOMAIN_MAINNET} == true ] || [ ${SETUP_DOMAIN_TESTNET} == true ]; then
+  echo "" && echo "[INFO] installing nginx ..."
+  sudo apt-get install nginx -qq > /dev/null
+  sudo service nginx stop
 
-sudo rm /etc/nginx/sites-enabled/default
+  echo "" && echo "[INFO] configuring nginx ..."
+  sudo sed -i -e "s/# server_tokens off;/server_tokens off;/g" /etc/nginx/nginx.conf
+  sudo sed -i -e "s/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g" /etc/nginx/nginx.conf
 
+  sudo rm /etc/nginx/sites-enabled/default
 
-if [ ${INSTALL_MAINNET_NODE} == true ]; then
-    echo "" && echo "[INFO] creating mainnet gateway ..."
-    echo "${NGINX_MAINNET_GATEWAY_CONFIGURATION_FILE_CONTENT}" | sudo tee /etc/nginx/conf.d/mainnet-gateway.conf > /dev/null
-fi
+  if [ ${SETUP_DOMAIN_MAINNET} == true ]; then
+      echo "" && echo "[INFO] creating mainnet gateway ..."
+      echo "${NGINX_MAINNET_GATEWAY_CONFIGURATION_FILE_CONTENT}" | sudo tee /etc/nginx/conf.d/mainnet-gateway.conf > /dev/null
+  fi
 
-if [ ${INSTALL_TESTNET_NODE} == true ]; then
-    echo "" && echo "[INFO] creating testnet gateway ..."
-    echo "${NGINX_TESTNET_GATEWAY_CONFIGURATION_FILE_CONTENT}" | sudo tee /etc/nginx/conf.d/testnet-gateway.conf > /dev/null
-fi
+  if [ ${SETUP_DOMAIN_TESTNET} == true ]; then
+      echo "" && echo "[INFO] creating testnet gateway ..."
+      echo "${NGINX_TESTNET_GATEWAY_CONFIGURATION_FILE_CONTENT}" | sudo tee /etc/nginx/conf.d/testnet-gateway.conf > /dev/null
+  fi
 
+  sudo service nginx start
 
-if [ ${ENABLE_LETSENCRYPT} == true ]; then
-
+  if [ ${ENABLE_LETSENCRYPT} == true ]; then
     echo "" && echo "[INFO] installing Let's Encrypt certbot ..."
-    sudo apt install -y software-properties-common
+    sudo apt-get install software-properties-common -qq > /dev/null
     sudo add-apt-repository -y ppa:certbot/certbot
     sudo apt update
-    sudo apt install -y python-certbot-nginx
+    sudo apt-get install python-certbot-nginx -qq
+  fi
 fi
 
 
@@ -395,7 +489,7 @@ wget https://www.jelurida.com/ardor-client.zip.asc
 gpg --with-fingerprint ardor-client.zip.asc
 
 echo "" && echo "[INFO] unzipping ardor ..."
-unzip ardor-client.zip
+unzip -qq ardor-client.zip
 
 
 if [ ${INSTALL_MAINNET_NODE} == true ]; then
@@ -423,7 +517,7 @@ if [ ${INSTALL_MAINNET_NODE} == true ]; then
         wget https://www.jelurida.com/Ardor-nxt_db.zip
 
         echo "" && echo "[INFO] unzipping mainnet blockchain ..."
-        unzip Ardor-nxt_db.zip
+        unzip -qq Ardor-nxt_db.zip
 
         echo "" && echo "[INFO] moving mainnet blockchain to ardor mainnet folder ..."
         mv nxt_db/ ardor-mainnet/
@@ -456,7 +550,7 @@ if [ ${INSTALL_TESTNET_NODE} == true ]; then
         wget https://www.jelurida.com/Ardor-nxt_test_db.zip
 
         echo "" && echo "[INFO] unzipping testnet blockchain ..."
-        unzip Ardor-nxt_test_db.zip
+        unzip -qq Ardor-nxt_test_db.zip
 
         echo "" && echo "[INFO] moving testnet blockchain to ardor testnet folder ..."
         mv nxt_test_db/ ardor-testnet/
@@ -469,8 +563,8 @@ if [ ${ENABLE_LETSENCRYPT} == true ]; then
     MAINNET_DOMAIN_CMD=""
     TESTNET_DOMAIN_CMD=""
     
-    if [ ${INSTALL_MAINNET_NODE} == true ]; then MAINNET_DOMAIN_CMD="-d ${MAINNET_DOMAIN}"; fi
-    if [ ${INSTALL_TESTNET_NODE} == true ]; then TESTNET_DOMAIN_CMD="-d ${TESTNET_DOMAIN}"; fi
+    if [ ${SETUP_DOMAIN_MAINNET} == true ]; then MAINNET_DOMAIN_CMD="-d ${MAINNET_DOMAIN}"; fi
+    if [ ${SETUP_DOMAIN_TESTNET} == true ]; then TESTNET_DOMAIN_CMD="-d ${TESTNET_DOMAIN}"; fi
 
     echo "" && echo "[INFO] requesting Let's Encrypt certificate(s) ..."
     sudo service nginx start
@@ -525,12 +619,10 @@ rm -rf ardor install-ardor.sh *.zip *.zip.asc *.txt
 
 
 echo "" && echo "[INFO] Server ready to go."
-echo "[INFO] In case you didn't select the blockchain download option,"
-echo "[INFO] it can take up to 10 minutes (depending on the server) to create the database."
-echo "[INFO] During this time, the node(s) response with 502 Bad Gateway and is (are) not accessible."
+echo "[INFO] To update your node(s) you can run 'bash ./update-nodes.sh',"
 echo "[INFO] To run the contract runner, uncomment the parameter in <ardor folder>/conf/nxt.properties"
 echo "[INFO] and configure them properly."
-echo "[INFO] Press any key to continue"
+echo "[INFO] Press any key to continue and reboot the system"
 read -n 1 -s
 
 if [ ${REBOOT} == true ]; then
