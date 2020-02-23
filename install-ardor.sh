@@ -324,6 +324,13 @@ echo \"\" && echo \"[INFO] done. Ardor nodes updated\"
 ###################################################################################################
 # MAIN
 ###################################################################################################
+# Verification Checks
+if [ $UID -eq 0 ]; then
+  echo "[ERROR] $0 should not be run as root."
+  echo "You can run 'bash ./create-sudo.user.sh' to create a new user"
+  echo "Exiting..."
+  exit 1
+fi
 
 echo "[INFO] setting language variables to solve location problems ..."
 echo "${PROFILE_LANGUAGE_VARIABLE}" >> ~/.profile
