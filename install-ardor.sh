@@ -24,6 +24,8 @@ IS_ARCHIVAL_TESTNET_NODE=false
 ENABLE_LETSENCRYPT=false
 ENABLE_SELF_SIGNED_CERTIFICATE=false
 
+DEFAULT_INSTALL_LOCATION=$( pwd )
+
 ###################################################################################################
 # CONFIGURATION
 ###################################################################################################
@@ -180,11 +182,18 @@ certbot renew >> renew-certificate.log
 echo \"\" >> renew-certificate.log
 "
 
+## Make sure we are in the correct directory (corsaro suggestion)
+function ChangeDirectory(){
+  cd ~
+  eval "cd $DEFAULT_INSTALL_LOCATION"
+}
+
 
 ###################################################################################################
 # MAIN
 ###################################################################################################
-echo "" && echo "[INFO] Ardor install script started"
+echo ""
+date +"%Y-%m-%d %H:%M:%S || [INFO] Ardor install script started"
 # Verification Checks
 if [ $UID -eq 0 ]; then
   echo "[ERROR] $0 should not be run as root."
@@ -196,6 +205,9 @@ if [ "$OSTYPE" != "linux-gnu" ] || [ "$HOSTTYPE" != "x86_64" ]; then
   echo "Error: only Linux (x86_64) is supported."
   exit 2
 fi
+
+echo "" && echo "[INFO] Working in the directory: $DEFAULT_INSTALL_LOCATION"
+ChangeDirectory
 
 [ "${RELEASEMAIN:-}" ] || read -r -p "Would you like to install a mainnet node? (Default $RELEASEMAINDEFAULT): " RELEASEMAIN
 RELEASEMAIN=${RELEASEMAIN:-$RELEASEMAINDEFAULT}
@@ -427,7 +439,7 @@ source ~/.profile
 
 
 echo "" && echo "[INFO] updating system ..."
-sudo apt update
+sudo apt update -q
 [ "${DO_UPDATE:-}" ] || read -r -p "It is recommended that you run an OS update, would you like to do that now? (Default yes): " DO_UPDATE
 DO_UPDATE=${DO_UPDATE:-yes}
 if [ "$DO_UPDATE" == "yes" ]; then
@@ -623,7 +635,8 @@ sudo apt autoremove -y
 rm -rf ardor install-ardor.sh *.zip *.zip.asc *.txt
 
 
-echo "" && echo "[INFO] Server ready to go."
+echo ""
+date +"%Y-%m-%d %H:%M:%S || [INFO] Server ready to go."
 echo "[INFO] To update your node(s) you can run './update-nodes.sh',"
 echo "[INFO] To run the contract runner, uncomment the parameter in <ardor folder>/conf/nxt.properties"
 echo "[INFO] and configure them properly."
