@@ -205,6 +205,10 @@ if [ "$OSTYPE" != "linux-gnu" ] || [ "$HOSTTYPE" != "x86_64" ]; then
   echo "Error: only Linux (x86_64) is supported."
   exit 2
 fi
+if [ -z "$(grep -Ei 'debian|ubuntu|mint' /etc/*release)" ]; then
+  echo "Error: only debian based OS is supported."
+  exit 2
+fi
 
 echo "" && echo "[INFO] Working in the directory: $DEFAULT_INSTALL_LOCATION"
 ChangeDirectory
@@ -306,7 +310,7 @@ if [ "$RELEASETEST" == "yes" ]; then
     echo "$OPENAPITEST is not valid, please check and re-execute"
     exit 2;
   fi
-  [ "${ARCHIVALTEST:-}" ] || read -r -p "Do you want this mainnet node to be an archival node? (Default $ARCHIVALDEFAULT): " ARCHIVALTEST
+  [ "${ARCHIVALTEST:-}" ] || read -r -p "Do you want this testnet node to be an archival node? (Default $ARCHIVALDEFAULT): " ARCHIVALTEST
   ARCHIVALTEST=${ARCHIVALTEST:-$ARCHIVALDEFAULT}
   if [ "$ARCHIVALTEST" == "yes" ]; then
     IS_ARCHIVAL_TESTNET_NODE=true    
