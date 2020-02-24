@@ -369,68 +369,88 @@ UPDATE_TESTNET_NODE=${INSTALL_TESTNET_NODE}
 # MAIN
 ###################################################################################################
 
-echo \"[INFO] downloading new ardor release ...\"
-wget https://www.jelurida.com/ardor-client.zip -q --show-progress
-wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
-gpg --with-fingerprint ardor-client.zip.asc
+###
+# Only check for new stable releases to mainnet for both mainnet and testnet nodes
+###
+date +\"%Y-%m-%d %H:%M:%S || [INFO] Checking for new ardor release\"
+ALIAS_VERSION=\$(curl --connect-timeout 2 --retry 2 --retry-delay 0 --retry-max-time 2 -s -S \"http://127.0.0.1:27876/nxt?requestType=getAlias&aliasName=nrsVersion&chain=2\")
+REMOTE_VERSION=\$( echo \${ALIAS_VERSION} | jq '.aliasURI' | sed -e 's/^\"//' -e 's/\"$//' | head -n1 | awk '{print \$1;}')
 
-echo \"\" && echo \"[INFO] unzipping new ardor release ...\"
-unzip -qq ardor-client.zip
+BLOCKCHAIN_VERSION=\$(curl --connect-timeout 2 --retry 2 --retry-delay 0 --retry-max-time 2 -s -S \"http://127.0.0.1:27876/nxt?requestType=getBlockchainStatus\")
+LOCAL_VERSION=\$( echo \${BLOCKCHAIN_VERSION} | jq '.version' | sed -e 's/^\"//' -e 's/\"$//')
 
-
-if [ \${UPDATE_MAINNET_NODE} == true ]; then
-
-    echo \"\" && echo \"[INFO] stopping ardor mainnet service ...\"
-    sudo systemctl stop ${ARDOR_MAINNET_SERVICE}.service
-
-
-    echo \"\" && echo \"[INFO] installing new ardor release ...\"
-    mkdir ardor-mainnet-update
-
-    mv ./${ARDOR_MAINNET_FOLDER}/conf/nxt.properties ./ardor-mainnet-update/nxt.properties
-    sudo mv ./${ARDOR_MAINNET_FOLDER}/nxt_db/ ./ardor-mainnet-update/nxt_db/
-
-    rm -rf ./${ARDOR_MAINNET_FOLDER}/
-    cp -r ./ardor ./${ARDOR_MAINNET_FOLDER}
-
-    mv ./ardor-mainnet-update/nxt.properties ./${ARDOR_MAINNET_FOLDER}/conf/nxt.properties
-    sudo mv ./ardor-mainnet-update/nxt_db/ ./${ARDOR_MAINNET_FOLDER}/nxt_db/
-
-
-    echo \"\" && echo \"[INFO] restarting ardor mainnet service ...\"
-    sudo systemctl start ${ARDOR_MAINNET_SERVICE}.service
+if [ -z \${REMOTE_VERSION} ] || [ -z \${LOCAL_VERSION} ]; then
+  echo \"[WARNING] Failed to check ardor versions\"
+  exit 1
 fi
 
+if [ \${REMOTE_VERSION} != \${LOCAL_VERSION} ]; then
 
-if [ \${UPDATE_TESTNET_NODE} == true ]; then
+  echo \"[INFO] downloading new ardor release ...\"
+  wget https://www.jelurida.com/ardor-client.zip -q --show-progress
+  wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
+  gpg --with-fingerprint --verify ardor-client.zip.asc ardor-client.zip
 
-    echo \"\" && echo \"[INFO] stopping ardor testnet service ...\"
-    sudo systemctl stop ${ARDOR_TESTNET_SERVICE}.service
-
-
-    echo \"\" && echo \"[INFO] installing new ardor release ...\"
-    mkdir ardor-testnet-update
-
-    mv ./${ARDOR_TESTNET_FOLDER}/conf/nxt.properties ./ardor-testnet-update/nxt.properties
-    sudo mv ./${ARDOR_TESTNET_FOLDER}/nxt_test_db/ ./ardor-testnet-update/nxt_test_db/
-
-    rm -rf ./${ARDOR_TESTNET_FOLDER}/
-    cp -r ./ardor ./${ARDOR_TESTNET_FOLDER}
-
-    mv ./ardor-testnet-update/nxt.properties ./${ARDOR_TESTNET_FOLDER}/conf/nxt.properties
-    sudo mv ./ardor-testnet-update/nxt_test_db/ ./${ARDOR_TESTNET_FOLDER}/nxt_test_db/
+  echo \"\" && echo \"[INFO] unzipping new ardor release ...\"
+  unzip -qq ardor-client.zip
 
 
-    echo \"\" && echo \"[INFO] restarting ardor testnet service ...\"
-    sudo systemctl start ${ARDOR_TESTNET_SERVICE}.service
+  if [ \${UPDATE_MAINNET_NODE} == true ]; then
+
+      echo \"\" && echo \"[INFO] stopping ardor mainnet service ...\"
+      sudo systemctl stop ${ARDOR_MAINNET_SERVICE}.service
+
+
+      echo \"\" && echo \"[INFO] installing new ardor release ...\"
+      mkdir ardor-mainnet-update
+
+      mv ./${ARDOR_MAINNET_FOLDER}/conf/nxt.properties ./ardor-mainnet-update/nxt.properties
+      sudo mv ./${ARDOR_MAINNET_FOLDER}/nxt_db/ ./ardor-mainnet-update/nxt_db/
+
+      rm -rf ./${ARDOR_MAINNET_FOLDER}/
+      cp -r ./ardor ./${ARDOR_MAINNET_FOLDER}
+
+      mv ./ardor-mainnet-update/nxt.properties ./${ARDOR_MAINNET_FOLDER}/conf/nxt.properties
+      sudo mv ./ardor-mainnet-update/nxt_db/ ./${ARDOR_MAINNET_FOLDER}/nxt_db/
+
+
+      echo \"\" && echo \"[INFO] restarting ardor mainnet service ...\"
+      sudo systemctl start ${ARDOR_MAINNET_SERVICE}.service
+  fi
+
+
+  if [ \${UPDATE_TESTNET_NODE} == true ]; then
+
+      echo \"\" && echo \"[INFO] stopping ardor testnet service ...\"
+      sudo systemctl stop ${ARDOR_TESTNET_SERVICE}.service
+
+
+      echo \"\" && echo \"[INFO] installing new ardor release ...\"
+      mkdir ardor-testnet-update
+
+      mv ./${ARDOR_TESTNET_FOLDER}/conf/nxt.properties ./ardor-testnet-update/nxt.properties
+      sudo mv ./${ARDOR_TESTNET_FOLDER}/nxt_test_db/ ./ardor-testnet-update/nxt_test_db/
+
+      rm -rf ./${ARDOR_TESTNET_FOLDER}/
+      cp -r ./ardor ./${ARDOR_TESTNET_FOLDER}
+
+      mv ./ardor-testnet-update/nxt.properties ./${ARDOR_TESTNET_FOLDER}/conf/nxt.properties
+      sudo mv ./ardor-testnet-update/nxt_test_db/ ./${ARDOR_TESTNET_FOLDER}/nxt_test_db/
+
+
+      echo \"\" && echo \"[INFO] restarting ardor testnet service ...\"
+      sudo systemctl start ${ARDOR_TESTNET_SERVICE}.service
+  fi
+
+
+  echo \"\" && echo \"[INFO] cleaning up ...\"
+  rm -rf ./ardor-mainnet-update ./ardor-testnet-update
+  rm -rf ardor ardor-client.zip ardor-client.zip.asc
+
+  echo \"\" && echo \"[INFO] done. Ardor nodes updated\"
+else
+  echo \"\" && echo \"[INFO] No update available\"
 fi
-
-
-echo \"\" && echo \"[INFO] cleaning up ...\"
-rm -rf ./ardor-mainnet-update ./ardor-testnet-update
-rm -rf ardor ardor-client.zip ardor-client.zip.asc
-
-echo \"\" && echo \"[INFO] done. Ardor nodes updated\"
 "
 
 echo "[INFO] setting language variables to solve location problems ..."
@@ -451,6 +471,9 @@ fi
 
 echo "" && echo "[INFO] installing unzip ..."
 sudo apt-get install unzip -qq > /dev/null
+
+echo "" && echo "[INFO] installing update script dependencies ..."
+sudo apt-get install curl jq -qq > /dev/null
 
 
 echo "" && echo "[INFO] installing OpenJDK 8 ..."
@@ -503,7 +526,7 @@ echo "" && echo "[INFO] checking download signiture ..."
 wget https://www.jelurida.com/sites/default/files/jelurida.gpg -q --show-progress
 gpg --import jelurida.gpg
 rm jelurida.gpg
-gpg --with-fingerprint ardor-client.zip.asc
+gpg --with-fingerprint --verify ardor-client.zip.asc ardor-client.zip
 
 echo "" && echo "[INFO] unzipping ardor ..."
 unzip -qq ardor-client.zip
@@ -629,6 +652,11 @@ echo "" && echo "[INFO] creating update script ..."
 echo "${UPDATE_ARDOR_NODES_SCRIPT_CONTENT}" > /home/${LOCAL_USER}/update-nodes.sh
 sudo chmod 700 /home/${LOCAL_USER}/update-nodes.sh
 
+[ "${AUTO_UPDATES:-}" ] || read -r -p "Would you like to enable automatic updates? (Default yes): " AUTO_UPDATES
+AUTO_UPDATES=${AUTO_UPDATES:-yes}
+if [ "$AUTO_UPDATES" == "yes" ]; then
+  crontab -l | { cat; echo "0 2 * * *  /bin/bash /home/${LOCAL_USER}/update-nodes.sh >/dev/null 2>&1"; } | crontab -
+fi
 
 echo "" && echo "[INFO] cleaning up ..."
 sudo apt autoremove -y
@@ -637,7 +665,7 @@ rm -rf ardor install-ardor.sh *.zip *.zip.asc *.txt
 
 echo ""
 date +"%Y-%m-%d %H:%M:%S || [INFO] Server ready to go."
-echo "[INFO] To update your node(s) you can run './update-nodes.sh',"
+echo "[INFO] To update your node(s) manually you can run './update-nodes.sh',"
 echo "[INFO] To run the contract runner, uncomment the parameter in <ardor folder>/conf/nxt.properties"
 echo "[INFO] and configure them properly."
 echo "[INFO] Press any key to continue and reboot the system"
