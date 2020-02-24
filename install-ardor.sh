@@ -258,6 +258,7 @@ if [ "$INSTALL_MAINNET_NODE" == true ]; then
   fi)
   $(if [ ${IS_ARCHIVAL_MAINNET_NODE} == true ]; then
     echo "nxt.maxPrunableLifetime=-1"
+    echo "nxt.includeExpiredPrunable=true"
   fi)
 
   ## Contract Runnner Configuration ##
@@ -331,6 +332,7 @@ if [ "$INSTALL_TESTNET_NODE" == true ]; then
   fi)
   $(if [ ${IS_ARCHIVAL_TESTNET_NODE} == true ]; then
       echo "nxt.maxPrunableLifetime=-1"
+      echo "nxt.includeExpiredPrunable=true"
   fi)
 
   ## Contract Runnner Configuration ##
