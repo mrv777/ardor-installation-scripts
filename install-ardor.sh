@@ -358,8 +358,8 @@ UPDATE_TESTNET_NODE=${INSTALL_TESTNET_NODE}
 ###################################################################################################
 
 echo \"[INFO] downloading new ardor release ...\"
-wget https://www.jelurida.com/ardor-client.zip
-wget https://www.jelurida.com/ardor-client.zip.asc
+wget https://www.jelurida.com/ardor-client.zip -q --show-progress
+wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
 gpg --with-fingerprint ardor-client.zip.asc
 
 echo \"\" && echo \"[INFO] unzipping new ardor release ...\"
@@ -484,8 +484,13 @@ fi
 
 echo "" && echo "[INFO] downloading ardor ..."
 cd ~
-wget https://www.jelurida.com/ardor-client.zip
-wget https://www.jelurida.com/ardor-client.zip.asc 
+wget https://www.jelurida.com/ardor-client.zip -q --show-progress
+wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
+
+echo "" && echo "[INFO] checking download signiture ..."
+wget https://www.jelurida.com/sites/default/files/jelurida.gpg -q --show-progress
+gpg --import jelurida.gpg
+rm jelurida.gpg
 gpg --with-fingerprint ardor-client.zip.asc
 
 echo "" && echo "[INFO] unzipping ardor ..."
@@ -514,7 +519,7 @@ if [ ${INSTALL_MAINNET_NODE} == true ]; then
     if [ ${DOWNLOAD_MAINNET_BLOCKCHAIN} == true ]; then
 
         echo "" && echo "[INFO] downloading mainnet blockchain ..."
-        wget https://www.jelurida.com/Ardor-nxt_db.zip
+        wget https://www.jelurida.com/Ardor-nxt_db.zip -q --show-progress
 
         echo "" && echo "[INFO] unzipping mainnet blockchain ..."
         unzip -qq Ardor-nxt_db.zip
@@ -547,7 +552,7 @@ if [ ${INSTALL_TESTNET_NODE} == true ]; then
     if [ ${DOWNLOAD_TESTNET_BLOCKCHAIN} == true ]; then
 
         echo "" && echo "[INFO] downloading testnet blockchain ..."
-        wget https://www.jelurida.com/Ardor-nxt_test_db.zip
+        wget https://www.jelurida.com/Ardor-nxt_test_db.zip -q --show-progress
 
         echo "" && echo "[INFO] unzipping testnet blockchain ..."
         unzip -qq Ardor-nxt_test_db.zip
@@ -619,7 +624,7 @@ rm -rf ardor install-ardor.sh *.zip *.zip.asc *.txt
 
 
 echo "" && echo "[INFO] Server ready to go."
-echo "[INFO] To update your node(s) you can run 'bash ./update-nodes.sh',"
+echo "[INFO] To update your node(s) you can run './update-nodes.sh',"
 echo "[INFO] To run the contract runner, uncomment the parameter in <ardor folder>/conf/nxt.properties"
 echo "[INFO] and configure them properly."
 echo "[INFO] Press any key to continue and reboot the system"
