@@ -530,12 +530,17 @@ fi
 echo "" && echo "[INFO] installing unzip ..."
 sudo apt-get install unzip -qq > /dev/null
 
-echo "" && echo "[INFO] installing update script dependencies ..."
-sudo apt-get install curl jq -qq > /dev/null
+echo "" && echo "[INFO] installing script dependencies ..."
+sudo apt-get install curl jq gpg -qq > /dev/null
 
 
-echo "" && echo "[INFO] installing OpenJDK 8 ..."
-sudo apt-get install openjdk-8-jre -qq > /dev/null
+if [ -z "$(grep -Ei 'VERSION_CODENAME=buster' /etc/*release)" ]; then
+  echo "" && echo "[INFO] installing OpenJDK 8 ..."
+  sudo apt-get install openjdk-8-jre -qq > /dev/null
+else ## Debian 10 does not have openjdk 8 available
+  echo "" && echo "[INFO] installing OpenJDK 11 ..."
+  sudo apt-get install openjdk-11-jre -qq > /dev/null
+fi
 
 
 # echo "" && echo "[INFO] enabling unattended-upgrade ..."
