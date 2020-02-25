@@ -4,12 +4,10 @@
 # CONFIGURATION
 ###################################################################################################
 
-SERVER_DOMAIN="<domain of ubuntu server>"
+SUDO_USER_NAME=""
+SUDO_USER_PWD=""
 
-SUDO_USER_NAME="<name of to be created sudo user>"
-SUDO_USER_PWD="<password of to be created sudo user>"
-
-IS_MAC=true
+IS_MAC_DEFAULT=no
 
 # use with caution. If you want to revoke your decission later, you manually need to edit /etc/ssh/sshd_config
 DISABLE_ROOT_LOGIN=false 
@@ -21,9 +19,9 @@ DISABLE_ROOT_PASSWORD_LOGIN=false
 ###################################################################################################
 
 KNOWN_HOSTS_FILE_PATH="/home/$(whoami)/.ssh/known_hosts"
-CREATE_SUDO_USER_SCRIPT_NAME="create-sudo-user.sh"
+CREATE_SUDO_USER_SCRIPT_NAME="create-sudo-user-unattended.sh"
 
-INSTALL_ARDOR_SCRIPT_NAME="install-ardor.sh"
+INSTALL_ARDOR_SCRIPT_NAME="install-ardor-unattended.sh"
 INSTALL_ARDOR_SCRIPT_PATH=$(dirname `which $0`)
 
 CREATE_SUDO_USER_CMD="chmod 700 ${CREATE_SUDO_USER_SCRIPT_NAME} && ./${CREATE_SUDO_USER_SCRIPT_NAME} -u ${SUDO_USER_NAME} -p ${SUDO_USER_PWD}"
@@ -34,6 +32,27 @@ DISABLE_ROOT_PASSWORD_LOGIN_CMD='sed -i -e "s/PasswordAuthentication yes/Passwor
 ###################################################################################################
 # MAIN
 ###################################################################################################
+if [ -z "$SUDO_USER_NAME" ]
+then
+    echo "[ERROR] No User Name provided."
+    echo "Exiting..."
+    exit 1
+elif [ -z "$SUDO_USER_PWD" ]
+then
+    echo "[ERROR] No User Password provided."
+    echo "Exiting..."
+    exit 1
+fi
+
+[ "${IS_MAC_PROMPT:-}" ] || read -r -p "Are you running this rommand from a Mac? (Default $IS_MAC_DEFAULT): " IS_MAC_PROMPT
+IS_MAC_PROMPT=${IS_MAC_PROMPT:-$IS_MAC_DEFAULT}
+if [ "$IS_MAC_PROMPT" == "yes" ]; then
+	IS_MAC=true
+else
+	IS_MAC=false
+fi
+
+read -r -p "Please enter the IP of the server you want to install ardor on: " SERVER_DOMAIN
 
 if [ ${IS_MAC} == true ]; then
     ssh-keygen -R ${SERVER_DOMAIN}
