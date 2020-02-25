@@ -91,8 +91,11 @@ chown -R ${USER_NAME} /home/${USER_NAME}/.ssh/
 su -c "cd ~ ; chmod 700 .ssh ; chmod 600 .ssh/authorized_keys" "${USER_NAME}"
 
 
-echo "[INFO] removing public keys from root account (so that root isn't accessable via ssh anymore) ..."
+echo "[INFO] removing public keys from root account and disabling SSH root login ..."
 rm /root/.ssh/authorized_keys
+sed -i -e "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
 
 
 echo "[INFO] ...finished. All things are done. Close connection and login as ${USER_NAME} again ..."
+service ssh restart
+exit

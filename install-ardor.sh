@@ -459,6 +459,58 @@ else
 fi
 "
 
+OPTIMIZE_ARDOR_NODES_SCRIPT_CONTENT="
+#!/bin/bash
+
+###################################################################################################
+# CONFIGURATION
+###################################################################################################
+
+OPTIMIZE_MAINNET_NODE=${INSTALL_MAINNET_NODE}
+OPTIMIZE_TESTNET_NODE=${INSTALL_TESTNET_NODE}
+
+
+###################################################################################################
+# MAIN
+###################################################################################################
+
+date +\"%Y-%m-%d %H:%M:%S || [INFO] Starting Ardor Optimization\"
+
+
+  if [ \${OPTIMIZE_MAINNET_NODE} == true ]; then
+
+      echo \"\" && echo \"[INFO] stopping ardor mainnet service ...\"
+      sudo systemctl stop ${ARDOR_MAINNET_SERVICE}.service
+
+
+      echo \"\" && echo \"[INFO] Optimizing mainnet node ...\"
+      cd /home/${LOCAL_USER}/${ARDOR_MAINNET_FOLDER}
+      /bin/bash compact.sh
+
+
+      echo \"\" && echo \"[INFO] restarting ardor mainnet service ...\"
+      sudo systemctl start ${ARDOR_MAINNET_SERVICE}.service
+  fi
+
+
+  if [ \${OPTIMIZE_TESTNET_NODE} == true ]; then
+
+      echo \"\" && echo \"[INFO] stopping ardor testnet service ...\"
+      sudo systemctl stop ${ARDOR_TESTNET_SERVICE}.service
+
+
+      echo \"\" && echo \"[INFO] Optimizing testnet node ...\"
+      cd /home/${LOCAL_USER}/${ARDOR_TESTNET_FOLDER}
+      /bin/bash compact.sh
+
+
+      echo \"\" && echo \"[INFO] restarting ardor testnet service ...\"
+      sudo systemctl start ${ARDOR_TESTNET_SERVICE}.service
+  fi
+
+  echo \"\" && echo \"[INFO] done. Ardor nodes optimized\"
+"
+
 echo "[INFO] setting language variables to solve location problems ..."
 echo "${PROFILE_LANGUAGE_VARIABLE}" >> ~/.profile
 source ~/.profile
@@ -661,7 +713,18 @@ sudo chmod 700 /home/${LOCAL_USER}/update-nodes.sh
 [ "${AUTO_UPDATES:-}" ] || read -r -p "Would you like to enable automatic updates? (Default yes): " AUTO_UPDATES
 AUTO_UPDATES=${AUTO_UPDATES:-yes}
 if [ "$AUTO_UPDATES" == "yes" ]; then
-  crontab -l | { cat; echo "0 2 * * *  /bin/bash /home/${LOCAL_USER}/update-nodes.sh >/dev/null 2>&1"; } | crontab -
+  (sudo crontab -l 2>> /dev/null; echo "0 2 * * *  /bin/bash /home/${LOCAL_USER}/update-nodes.sh >/dev/null 2>&1") | sudo crontab -
+fi
+
+echo "" && echo "[INFO] creating optimize script ..."
+echo "${OPTIMIZE_ARDOR_NODES_SCRIPT_CONTENT}" > /home/${LOCAL_USER}/optimize-nodes.sh
+sudo chmod 700 /home/${LOCAL_USER}/optimize-nodes.sh
+
+[ "${OPTIMIZE_NODES:-}" ] || read -r -p "Would you like to enable monthly optimization of node(s)? (Default yes): " OPTIMIZE_NODES
+OPTIMIZE_NODES=${OPTIMIZE_NODES:-yes}
+if [ "$OPTIMIZE_NODES" == "yes" ]; then
+  RANDOM_DAY=$((1 + RANDOM % 28))
+  (sudo crontab -l 2>> /dev/null; echo "0 0 $RANDOM_DAY * *  /bin/bash /home/${LOCAL_USER}/optimize-nodes.sh >/dev/null 2>&1") | sudo crontab -
 fi
 
 echo "" && echo "[INFO] cleaning up ..."
