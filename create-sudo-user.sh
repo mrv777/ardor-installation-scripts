@@ -25,7 +25,7 @@ while getopts "h?u:p:" opt; do
         echo "if you do your configuration with the default parameter inside the script."
         echo "This is just an example of using all parameter to show how to use them."
         echo ""
-        echo "$(basename "$0") -u <user name> -p <passoword>"
+        echo "$(basename "$0") -u <username> -p <password>"
         echo ""
         echo "Parameter:"
         echo "-u  user name"
