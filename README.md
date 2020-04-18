@@ -21,8 +21,8 @@ If you only have a root user or are unsure, start here
 - ``bash ./create-sudo-user.sh -u {username} -p {password}``
 Remove the {username} with your username and the same for password
 
-Logout and log back in as new user
-Now that we have a regular user we can do the 2 commands to get and set everthing up:
+Logout and log back in as new user. 
+Now that we have a regular user we can do the 2 commands to get and set everything up:
 - ``wget https://raw.githubusercontent.com/mrv777/ardor-installation-scripts/master/install-ardor.sh``
 - ``bash ./install-ardor.sh``
 
