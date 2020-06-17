@@ -354,10 +354,6 @@ if [ $UID -eq 0 ]; then
   echo "Exiting..."
   exit 1
 fi
-if [ "$OSTYPE" != "linux-gnu" ] || [ "$HOSTTYPE" != "x86_64" ]; then
-  echo "Error: only Linux (x86_64) is supported."
-  exit 2
-fi
 if [ -z "$(grep -Ei 'debian|ubuntu|mint' /etc/*release)" ]; then
   echo "Error: only debian based OS is supported."
   exit 2
