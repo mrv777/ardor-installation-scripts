@@ -714,7 +714,8 @@ sudo chmod 700 /home/${LOCAL_USER}/update-nodes.sh
 [ "${AUTO_UPDATES:-}" ] || read -r -p "Would you like to enable automatic updates? (Default yes): " AUTO_UPDATES
 AUTO_UPDATES=${AUTO_UPDATES:-yes}
 if [ "$AUTO_UPDATES" == "yes" ]; then
-  (sudo crontab -l 2>> /dev/null; echo "0 2 * * *  /bin/bash /home/${LOCAL_USER}/update-nodes.sh >/dev/null 2>&1") | sudo crontab -
+  RANDOM_HOUR=$((1 + RANDOM % 3))
+  (sudo crontab -l 2>> /dev/null; echo "0 $RANDOM_HOUR * * *  /bin/bash /home/${LOCAL_USER}/update-nodes.sh >/dev/null 2>&1") | sudo crontab -
 fi
 
 echo "" && echo "[INFO] creating optimize script ..."
@@ -724,7 +725,7 @@ sudo chmod 700 /home/${LOCAL_USER}/optimize-nodes.sh
 [ "${OPTIMIZE_NODES:-}" ] || read -r -p "Would you like to enable monthly optimization of node(s)? (Default yes): " OPTIMIZE_NODES
 OPTIMIZE_NODES=${OPTIMIZE_NODES:-yes}
 if [ "$OPTIMIZE_NODES" == "yes" ]; then
-  RANDOM_DAY=$((1 + RANDOM % 28))
+  RANDOM_DAY=$((1 + RANDOM % 27))
   (sudo crontab -l 2>> /dev/null; echo "0 0 $RANDOM_DAY * *  /bin/bash /home/${LOCAL_USER}/optimize-nodes.sh >/dev/null 2>&1") | sudo crontab -
 fi
 
