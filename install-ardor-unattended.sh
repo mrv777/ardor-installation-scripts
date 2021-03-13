@@ -276,8 +276,8 @@ fi
 if [ \${REMOTE_VERSION} != \${LOCAL_VERSION} ]; then
 
   echo \"[INFO] downloading new ardor release ...\"
-  wget https://www.jelurida.com/ardor-client.zip -q --show-progress
-  wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
+  wget https://www.jelurida.com/ardor-client.zip -O ardor-client.zip -q --show-progress
+  wget https://www.jelurida.com/ardor-client.zip.asc -O ardor-client.zip.asc -q --show-progress
   gpg --with-fingerprint --verify ardor-client.zip.asc ardor-client.zip
 
   echo \"\" && echo \"[INFO] unzipping new ardor release ...\"
@@ -421,11 +421,11 @@ fi
 
 echo "" && echo "[INFO] downloading ardor ..."
 cd ~
-wget https://www.jelurida.com/ardor-client.zip -q --show-progress
-wget https://www.jelurida.com/ardor-client.zip.asc -q --show-progress
+wget https://www.jelurida.com/ardor-client.zip -O ardor-client.zip -q --show-progress
+wget https://www.jelurida.com/ardor-client.zip.asc -O ardor-client.zip.asc -q --show-progress
 
 echo "" && echo "[INFO] checking download signiture ..."
-wget https://www.jelurida.com/sites/default/files/jelurida.gpg -q --show-progress
+wget https://www.jelurida.com/sites/default/files/jelurida.gpg -O jelurida.gpg -q --show-progress
 gpg --import jelurida.gpg
 rm jelurida.gpg
 gpg --with-fingerprint --verify ardor-client.zip.asc ardor-client.zip
@@ -456,7 +456,7 @@ if [ ${INSTALL_MAINNET_NODE} == true ]; then
     if [ ${DOWNLOAD_MAINNET_BLOCKCHAIN} == true ]; then
 
         echo "" && echo "[INFO] downloading mainnet blockchain ..."
-        wget https://www.jelurida.com/Ardor-nxt_db.zip
+        wget https://www.jelurida.com/Ardor-nxt_db.zip -O Ardor-nxt_db.zip
 
         echo "" && echo "[INFO] unzipping mainnet blockchain ..."
         unzip Ardor-nxt_db.zip
@@ -489,7 +489,7 @@ if [ ${INSTALL_TESTNET_NODE} == true ]; then
     if [ ${DOWNLOAD_TESTNET_BLOCKCHAIN} == true ]; then
 
         echo "" && echo "[INFO] downloading testnet blockchain ..."
-        wget https://www.jelurida.com/Ardor-nxt_test_db.zip
+        wget https://www.jelurida.com/Ardor-nxt_test_db.zip -O Ardor-nxt_test_db.zip
 
         echo "" && echo "[INFO] unzipping testnet blockchain ..."
         unzip Ardor-nxt_test_db.zip
