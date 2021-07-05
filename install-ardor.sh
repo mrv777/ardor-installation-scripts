@@ -572,7 +572,7 @@ if [ ${SETUP_DOMAIN_MAINNET} == true ] || [ ${SETUP_DOMAIN_TESTNET} == true ]; t
     sudo apt-get install software-properties-common -qq > /dev/null
     sudo add-apt-repository -y ppa:certbot/certbot
     sudo apt update
-    sudo apt-get install python-certbot-nginx -qq
+    sudo apt-get install python3-certbot-nginx -qq
   fi
 fi
 
